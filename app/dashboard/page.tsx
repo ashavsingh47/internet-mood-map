@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { LiveStatus } from "@/components/Dashboard/LiveStatus";
 import { MoodHistoryChart } from "@/components/Dashboard/MoodHistoryChart";
 import { PipelineStatus } from "@/components/Dashboard/PipelineStatus";
@@ -41,38 +41,42 @@ export default function DashboardPage() {
   const [selectedMood, setSelectedMood] = useState<MoodFilter>("all");
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  useEffect(() => {
-    async function loadMoodData() {
-      try {
-        const response = await fetch("/api/mood");
+  const loadMoodData = useCallback(async () => {
+    try {
+      setErrorMessage("");
+      setIsRefreshing(true);
 
-        if (!response.ok) {
-          throw new Error("Failed to load mood data.");
-        }
+      const response = await fetch("/api/mood");
 
-        const data = (await response.json()) as MoodApiResponse;
-
-        setRegions(data.regions);
-        setHistory(data.history);
-        setSummary(data.summary);
-
-        setSelectedRegionId((currentRegionId) => {
-          return currentRegionId || data.regions[0]?.id || "";
-        });
-      } catch (error) {
-        setErrorMessage(
-          error instanceof Error
-            ? error.message
-            : "Something went wrong while loading mood data.",
-        );
-      } finally {
-        setIsLoading(false);
+      if (!response.ok) {
+        throw new Error("Failed to load mood data.");
       }
-    }
 
-    loadMoodData();
+      const data = (await response.json()) as MoodApiResponse;
+
+      setRegions(data.regions);
+      setHistory(data.history);
+      setSummary(data.summary);
+
+      setSelectedRegionId((currentRegionId) => {
+        return currentRegionId || data.regions[0]?.id || "";
+      });
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong while loading mood data.",
+      );
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
   }, []);
+  useEffect(() => {
+    loadMoodData();
+  }, [loadMoodData]);
 
   const filteredRegions = useMemo(() => {
     return regions.filter((region) => {
@@ -171,12 +175,23 @@ export default function DashboardPage() {
           <div className="flex flex-col gap-3 md:items-end">
             <LiveStatus />
 
-            <a
-              href="/"
-              className="rounded-full border border-white/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
-            >
-              Back to Home
-            </a>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={loadMoodData}
+                disabled={isRefreshing}
+                className="rounded-full bg-cyan-400 px-5 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isRefreshing ? "Refreshing..." : "Refresh Signals"}
+              </button>
+
+              <a
+                href="/"
+                className="rounded-full border border-white/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+              >
+                Back to Home
+              </a>
+            </div>
           </div>
         </div>
 
