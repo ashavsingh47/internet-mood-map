@@ -1,4 +1,5 @@
 "use client";
+import { LiveStatus } from "@/components/Dashboard/LiveStatus";
 import { TopMoodSpikes } from "@/components/Dashboard/TopMoodSpikes";
 import { useEffect, useState } from "react";
 import { MoodHistoryChart } from "@/components/Dashboard/MoodHistoryChart";
@@ -85,12 +86,16 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <a
-            href="/"
-            className="rounded-full border border-white/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
-          >
-            Back to Home
-          </a>
+          <div className="flex flex-col gap-3 md:items-end">
+            <LiveStatus />
+
+            <a
+              href="/"
+              className="rounded-full border border-white/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+            >
+              Back to Home
+            </a>
+          </div>
         </div>
 
         <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
