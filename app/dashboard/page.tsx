@@ -1,5 +1,5 @@
 "use client";
-
+import { TopMoodSpikes } from "@/components/Dashboard/TopMoodSpikes";
 import { useEffect, useState } from "react";
 import { MoodHistoryChart } from "@/components/Dashboard/MoodHistoryChart";
 import { RegionCard } from "@/components/Dashboard/RegionCard";
@@ -167,7 +167,10 @@ export default function DashboardPage() {
             </div>
 
             <RegionInsight region={selectedRegion} />
-
+            <TopMoodSpikes
+              regions={mockMoodData}
+              onRegionSelect={setSelectedRegionId}
+            />
             <RegionFilters
               searchQuery={searchQuery}
               selectedMood={selectedMood}
