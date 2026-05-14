@@ -71,7 +71,7 @@ export default function DashboardPage() {
   return (
     <main className="mood-bg min-h-screen text-white">
       {" "}
-      <section className="mood-content mx-auto flex min-h-screen max-w-7xl flex-col px-6 py-8">
+      <section className="mood-content mx-auto flex min-h-screen max-w-7xl flex-col px-4 py-6 sm:px-6 lg:px-8">
         {" "}
         <div className="mb-8 flex flex-col justify-between gap-4 border-b border-white/10 pb-6 md:flex-row md:items-center">
           <div>
@@ -79,7 +79,8 @@ export default function DashboardPage() {
               Live Mood Intelligence
             </p>
 
-            <h1 className="mt-3 text-4xl font-bold tracking-tight">
+            <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
+              {" "}
               Global Internet Mood Dashboard
             </h1>
 
@@ -101,25 +102,23 @@ export default function DashboardPage() {
           </div>
         </div>
         <PipelineStatus />
-        <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {" "}
           <StatCard
             label="Regions Sampled"
             value={mockMoodData.length}
             description="Mock regions currently powering the MVP."
           />
-
           <StatCard
             label="Average Mood Score"
             value={`${averageMoodScore}/100`}
             description="Average emotional intensity across all regions."
           />
-
           <StatCard
             label="High Activity Zones"
             value={highActivityRegions.length}
             description="Regions with strong conversation activity."
           />
-
           <StatCard
             label="Global Mood"
             value={globalMoodLabel}
@@ -136,7 +135,8 @@ export default function DashboardPage() {
                 Simulated Live
               </span>
             </div>
-            <div className="h-[460px] overflow-hidden rounded-2xl border border-white/10 bg-slate-900/80">
+            <div className="h-[360px] overflow-hidden rounded-2xl border border-white/10 bg-slate-900/80 sm:h-[430px] lg:h-[520px]">
+              {" "}
               <MoodMapWrapper
                 regions={filteredRegions}
                 selectedRegionId={selectedRegionId}
