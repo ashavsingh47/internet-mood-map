@@ -48,8 +48,9 @@ export default function DashboardPage() {
       setErrorMessage("");
       setIsRefreshing(true);
 
-      const response = await fetch("/api/mood");
-
+      const response = await fetch("/api/mood", {
+        cache: "no-store",
+      });
       if (!response.ok) {
         throw new Error("Failed to load mood data.");
       }
