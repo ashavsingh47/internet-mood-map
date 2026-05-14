@@ -1,58 +1,99 @@
 "use client";
-import { PipelineStatus } from "@/components/Dashboard/PipelineStatus";
+
+import { useEffect, useMemo, useState } from "react";
 import { LiveStatus } from "@/components/Dashboard/LiveStatus";
-import { TopMoodSpikes } from "@/components/Dashboard/TopMoodSpikes";
-import { useEffect, useState } from "react";
 import { MoodHistoryChart } from "@/components/Dashboard/MoodHistoryChart";
+import { PipelineStatus } from "@/components/Dashboard/PipelineStatus";
 import { RegionCard } from "@/components/Dashboard/RegionCard";
 import { RegionFilters } from "@/components/Dashboard/RegionFilters";
 import { RegionInsight } from "@/components/Dashboard/RegionInsight";
 import { StatCard } from "@/components/Dashboard/StatCard";
+import { TopMoodSpikes } from "@/components/Dashboard/TopMoodSpikes";
 import { MoodLegend } from "@/components/Map/MoodLegend";
 import { MoodMapWrapper } from "@/components/Map/MoodMapWrapper";
-import { mockMoodData, mockMoodHistory, type Mood } from "@/data/mockMoodData";
+import type { Mood, MoodHistoryPoint, RegionMood } from "@/data/mockMoodData";
 import { moodStyles } from "@/lib/moodStyles";
-import {
-  formatMoodLabel,
-  getAverageMoodScore,
-  getMostCommonMood,
-} from "@/lib/moodUtils";
+import { formatMoodLabel } from "@/lib/moodUtils";
 
 type MoodFilter = Mood | "all";
 
+type MoodApiResponse = {
+  status: string;
+  generatedAt: string;
+  summary: {
+    regionsSampled: number;
+    globalMood: Mood;
+    averageMoodScore: number;
+    highActivityZones: number;
+  };
+  regions: RegionMood[];
+  history: MoodHistoryPoint[];
+};
+
 export default function DashboardPage() {
-  const [selectedRegionId, setSelectedRegionId] = useState(mockMoodData[0].id);
+  const [regions, setRegions] = useState<RegionMood[]>([]);
+  const [history, setHistory] = useState<MoodHistoryPoint[]>([]);
+  const [summary, setSummary] = useState<MoodApiResponse["summary"] | null>(
+    null,
+  );
+  const [selectedRegionId, setSelectedRegionId] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMood, setSelectedMood] = useState<MoodFilter>("all");
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const selectedRegion =
-    mockMoodData.find((region) => region.id === selectedRegionId) ??
-    mockMoodData[0];
+  useEffect(() => {
+    async function loadMoodData() {
+      try {
+        const response = await fetch("/api/mood");
 
-  const filteredRegions = mockMoodData.filter((region) => {
-    const searchText = searchQuery.toLowerCase().trim();
+        if (!response.ok) {
+          throw new Error("Failed to load mood data.");
+        }
 
-    const matchesSearch =
-      searchText.length === 0 ||
-      region.country.toLowerCase().includes(searchText) ||
-      region.city.toLowerCase().includes(searchText) ||
-      region.mood.toLowerCase().includes(searchText) ||
-      region.trendingTopics.some((topic) =>
-        topic.toLowerCase().includes(searchText),
-      );
+        const data = (await response.json()) as MoodApiResponse;
 
-    const matchesMood = selectedMood === "all" || region.mood === selectedMood;
+        setRegions(data.regions);
+        setHistory(data.history);
+        setSummary(data.summary);
 
-    return matchesSearch && matchesMood;
-  });
+        setSelectedRegionId((currentRegionId) => {
+          return currentRegionId || data.regions[0]?.id || "";
+        });
+      } catch (error) {
+        setErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "Something went wrong while loading mood data.",
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    }
 
-  const globalMood = getMostCommonMood(mockMoodData);
-  const averageMoodScore = getAverageMoodScore(mockMoodData);
-  const globalMoodLabel = formatMoodLabel(globalMood);
+    loadMoodData();
+  }, []);
 
-  const highActivityRegions = mockMoodData.filter((region) => {
-    return region.activityLevel === "high";
-  });
+  const filteredRegions = useMemo(() => {
+    return regions.filter((region) => {
+      const searchText = searchQuery.toLowerCase().trim();
+
+      const matchesSearch =
+        searchText.length === 0 ||
+        region.country.toLowerCase().includes(searchText) ||
+        region.city.toLowerCase().includes(searchText) ||
+        region.mood.toLowerCase().includes(searchText) ||
+        region.trendingTopics.some((topic) =>
+          topic.toLowerCase().includes(searchText),
+        );
+
+      const matchesMood =
+        selectedMood === "all" || region.mood === selectedMood;
+
+      return matchesSearch && matchesMood;
+    });
+  }, [regions, searchQuery, selectedMood]);
+
   useEffect(() => {
     const selectedRegionIsVisible = filteredRegions.some((region) => {
       return region.id === selectedRegionId;
@@ -62,17 +103,55 @@ export default function DashboardPage() {
       setSelectedRegionId(filteredRegions[0].id);
     }
   }, [filteredRegions, selectedRegionId]);
+
   function handleResetFilters() {
     setSearchQuery("");
     setSelectedMood("all");
-    setSelectedRegionId(mockMoodData[0].id);
+    setSelectedRegionId(regions[0]?.id || "");
   }
+
+  if (isLoading) {
+    return (
+      <main className="mood-bg flex min-h-screen items-center justify-center px-6 text-white">
+        <div className="glass-panel rounded-3xl p-8 text-center">
+          <p className="section-kicker">Loading Mood Intelligence</p>
+
+          <h1 className="mt-3 text-3xl font-bold">Fetching live signals...</h1>
+
+          <p className="mt-3 text-slate-400">
+            The dashboard is requesting mood data from the API.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  if (errorMessage || !summary || regions.length === 0) {
+    return (
+      <main className="mood-bg flex min-h-screen items-center justify-center px-6 text-white">
+        <div className="glass-panel rounded-3xl p-8 text-center">
+          <p className="section-kicker">Mood API Error</p>
+
+          <h1 className="mt-3 text-3xl font-bold">Could not load dashboard</h1>
+
+          <p className="mt-3 text-slate-400">
+            {errorMessage || "No mood data was returned from the API."}
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  const selectedRegion =
+    regions.find((region) => region.id === selectedRegionId) ?? regions[0];
+
+  const globalMood = summary.globalMood;
+  const averageMoodScore = summary.averageMoodScore;
+  const globalMoodLabel = formatMoodLabel(globalMood);
 
   return (
     <main className="mood-bg min-h-screen text-white">
-      {" "}
       <section className="mood-content mx-auto flex min-h-screen max-w-7xl flex-col px-4 py-6 sm:px-6 lg:px-8">
-        {" "}
         <div className="mb-8 flex flex-col justify-between gap-4 border-b border-white/10 pb-6 md:flex-row md:items-center">
           <div>
             <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
@@ -80,7 +159,6 @@ export default function DashboardPage() {
             </p>
 
             <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
-              {" "}
               Global Internet Mood Dashboard
             </h1>
 
@@ -101,57 +179,62 @@ export default function DashboardPage() {
             </a>
           </div>
         </div>
+
         <PipelineStatus />
+
         <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {" "}
           <StatCard
             label="Regions Sampled"
-            value={mockMoodData.length}
-            description="Mock regions currently powering the MVP."
+            value={summary.regionsSampled}
+            description="Regions currently returned by the mood API."
           />
+
           <StatCard
             label="Average Mood Score"
             value={`${averageMoodScore}/100`}
             description="Average emotional intensity across all regions."
           />
+
           <StatCard
             label="High Activity Zones"
-            value={highActivityRegions.length}
+            value={summary.highActivityZones}
             description="Regions with strong conversation activity."
           />
+
           <StatCard
             label="Global Mood"
             value={globalMoodLabel}
-            description="Most common mood detected in the sample."
+            description="Most common mood detected in the API response."
           />
         </div>
+
         <div className="grid flex-1 gap-6 lg:grid-cols-[2fr_1fr]">
           <div className="glass-panel glass-panel-cyan rounded-3xl p-6">
-            {" "}
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-xl font-semibold">Mood Map</h2>
 
               <span className="rounded-full bg-emerald-400/10 px-3 py-1 text-sm text-emerald-300">
-                Simulated Live
+                API Powered
               </span>
             </div>
+
             <div className="h-[360px] overflow-hidden rounded-2xl border border-white/10 bg-slate-900/80 sm:h-[430px] lg:h-[520px]">
-              {" "}
               <MoodMapWrapper
                 regions={filteredRegions}
                 selectedRegionId={selectedRegionId}
                 onRegionSelect={setSelectedRegionId}
               />
             </div>
+
             <MoodLegend />
+
             <div className="mt-6">
-              <MoodHistoryChart data={mockMoodHistory} />
+              <MoodHistoryChart data={history} />
             </div>
           </div>
 
           <div className="space-y-6">
             <div className="glass-panel card-hover rounded-3xl p-6">
-              {" "}
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-xl font-semibold text-cyan-300">
                   Current Global Mood
@@ -163,18 +246,23 @@ export default function DashboardPage() {
                   {averageMoodScore}/100
                 </span>
               </div>
+
               <p className="mt-4 text-5xl font-bold">{globalMoodLabel}</p>
+
               <p className="mt-3 text-slate-300">
-                Based on {mockMoodData.length} sampled regions, the internet is
-                currently showing a mostly {globalMood} emotional pattern.
+                Based on {summary.regionsSampled} API-loaded regions, the
+                internet is currently showing a mostly {globalMood} emotional
+                pattern.
               </p>
             </div>
 
             <RegionInsight region={selectedRegion} />
+
             <TopMoodSpikes
-              regions={mockMoodData}
+              regions={regions}
               onRegionSelect={setSelectedRegionId}
             />
+
             <RegionFilters
               searchQuery={searchQuery}
               selectedMood={selectedMood}
@@ -183,7 +271,7 @@ export default function DashboardPage() {
               onReset={handleResetFilters}
             />
 
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+            <div className="glass-panel card-hover rounded-3xl p-6">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-semibold text-cyan-300">
@@ -191,7 +279,7 @@ export default function DashboardPage() {
                   </h2>
 
                   <p className="mt-2 text-sm text-slate-400">
-                    Showing {filteredRegions.length} of {mockMoodData.length}{" "}
+                    Showing {filteredRegions.length} of {regions.length}{" "}
                     regions.
                   </p>
                 </div>
