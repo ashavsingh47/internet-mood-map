@@ -1,12 +1,14 @@
 "use client";
+
+import { useEffect, useState } from "react";
 import { MoodHistoryChart } from "@/components/Dashboard/MoodHistoryChart";
-import { useState } from "react";
 import { RegionCard } from "@/components/Dashboard/RegionCard";
+import { RegionFilters } from "@/components/Dashboard/RegionFilters";
 import { RegionInsight } from "@/components/Dashboard/RegionInsight";
 import { StatCard } from "@/components/Dashboard/StatCard";
 import { MoodLegend } from "@/components/Map/MoodLegend";
 import { MoodMapWrapper } from "@/components/Map/MoodMapWrapper";
-import { mockMoodData, mockMoodHistory } from "@/data/mockMoodData";
+import { mockMoodData, mockMoodHistory, type Mood } from "@/data/mockMoodData";
 import { moodStyles } from "@/lib/moodStyles";
 import {
   formatMoodLabel,
@@ -14,14 +16,33 @@ import {
   getMostCommonMood,
 } from "@/lib/moodUtils";
 
-export default function DashboardPage() {
-  const topRegions = mockMoodData.slice(0, 3);
+type MoodFilter = Mood | "all";
 
+export default function DashboardPage() {
   const [selectedRegionId, setSelectedRegionId] = useState(mockMoodData[0].id);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedMood, setSelectedMood] = useState<MoodFilter>("all");
 
   const selectedRegion =
     mockMoodData.find((region) => region.id === selectedRegionId) ??
     mockMoodData[0];
+
+  const filteredRegions = mockMoodData.filter((region) => {
+    const searchText = searchQuery.toLowerCase().trim();
+
+    const matchesSearch =
+      searchText.length === 0 ||
+      region.country.toLowerCase().includes(searchText) ||
+      region.city.toLowerCase().includes(searchText) ||
+      region.mood.toLowerCase().includes(searchText) ||
+      region.trendingTopics.some((topic) =>
+        topic.toLowerCase().includes(searchText),
+      );
+
+    const matchesMood = selectedMood === "all" || region.mood === selectedMood;
+
+    return matchesSearch && matchesMood;
+  });
 
   const globalMood = getMostCommonMood(mockMoodData);
   const averageMoodScore = getAverageMoodScore(mockMoodData);
@@ -30,6 +51,20 @@ export default function DashboardPage() {
   const highActivityRegions = mockMoodData.filter((region) => {
     return region.activityLevel === "high";
   });
+  useEffect(() => {
+    const selectedRegionIsVisible = filteredRegions.some((region) => {
+      return region.id === selectedRegionId;
+    });
+
+    if (!selectedRegionIsVisible && filteredRegions.length > 0) {
+      setSelectedRegionId(filteredRegions[0].id);
+    }
+  }, [filteredRegions, selectedRegionId]);
+  function handleResetFilters() {
+    setSearchQuery("");
+    setSelectedMood("all");
+    setSelectedRegionId(mockMoodData[0].id);
+  }
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
@@ -96,13 +131,14 @@ export default function DashboardPage() {
 
             <div className="h-[460px] overflow-hidden rounded-2xl border border-white/10 bg-slate-900/80">
               <MoodMapWrapper
-                regions={mockMoodData}
+                regions={filteredRegions}
                 selectedRegionId={selectedRegionId}
                 onRegionSelect={setSelectedRegionId}
-              />{" "}
+              />
             </div>
 
             <MoodLegend />
+
             <div className="mt-6">
               <MoodHistoryChart data={mockMoodHistory} />
             </div>
@@ -132,24 +168,45 @@ export default function DashboardPage() {
 
             <RegionInsight region={selectedRegion} />
 
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-              <h2 className="text-xl font-semibold text-cyan-300">
-                Trending Regions
-              </h2>
+            <RegionFilters
+              searchQuery={searchQuery}
+              selectedMood={selectedMood}
+              onSearchChange={setSearchQuery}
+              onMoodChange={setSelectedMood}
+              onReset={handleResetFilters}
+            />
 
-              <p className="mt-2 text-sm text-slate-400">
-                Click a region to update the insight panel.
-              </p>
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-semibold text-cyan-300">
+                    Matching Regions
+                  </h2>
+
+                  <p className="mt-2 text-sm text-slate-400">
+                    Showing {filteredRegions.length} of {mockMoodData.length}{" "}
+                    regions.
+                  </p>
+                </div>
+              </div>
 
               <div className="mt-4 space-y-3">
-                {topRegions.map((region) => (
-                  <RegionCard
-                    key={region.id}
-                    region={region}
-                    isSelected={region.id === selectedRegionId}
-                    onClick={() => setSelectedRegionId(region.id)}
-                  />
-                ))}
+                {filteredRegions.length > 0 ? (
+                  filteredRegions.map((region) => (
+                    <RegionCard
+                      key={region.id}
+                      region={region}
+                      isSelected={region.id === selectedRegionId}
+                      onClick={() => setSelectedRegionId(region.id)}
+                    />
+                  ))
+                ) : (
+                  <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4">
+                    <p className="text-sm text-slate-400">
+                      No regions match your current search or mood filter.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
