@@ -36,6 +36,7 @@ export default function DashboardPage() {
   const [summary, setSummary] = useState<MoodApiResponse["summary"] | null>(
     null,
   );
+  const [generatedAt, setGeneratedAt] = useState("");
   const [selectedRegionId, setSelectedRegionId] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMood, setSelectedMood] = useState<MoodFilter>("all");
@@ -60,6 +61,7 @@ export default function DashboardPage() {
       setRegions(data.regions);
       setHistory(data.history);
       setSummary(data.summary);
+      setGeneratedAt(data.generatedAt);
 
       setSelectedRegionId((currentRegionId) => {
         return currentRegionId || data.regions[0]?.id || "";
@@ -153,6 +155,11 @@ export default function DashboardPage() {
   const globalMood = summary.globalMood;
   const averageMoodScore = summary.averageMoodScore;
   const globalMoodLabel = formatMoodLabel(globalMood);
+  const formattedGeneratedAt = new Date(generatedAt).toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+  });
 
   return (
     <main className="mood-bg min-h-screen text-white">
@@ -226,10 +233,19 @@ export default function DashboardPage() {
 
         <div className="grid flex-1 gap-6 lg:grid-cols-[2fr_1fr]">
           <div className="glass-panel glass-panel-cyan rounded-3xl p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Mood Map</h2>
+            <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+              <div>
+                <h2 className="text-xl font-semibold">Mood Map</h2>
 
-              <span className="rounded-full bg-emerald-400/10 px-3 py-1 text-sm text-emerald-300">
+                <p className="mt-1 text-sm text-slate-400">
+                  API generated at{" "}
+                  <span className="font-semibold text-white">
+                    {formattedGeneratedAt}
+                  </span>
+                </p>
+              </div>
+
+              <span className="w-fit rounded-full bg-emerald-400/10 px-3 py-1 text-sm text-emerald-300">
                 API Powered
               </span>
             </div>
