@@ -43,6 +43,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
 
   const loadMoodData = useCallback(async () => {
     try {
@@ -80,6 +81,19 @@ export default function DashboardPage() {
   useEffect(() => {
     loadMoodData();
   }, [loadMoodData]);
+  useEffect(() => {
+    if (!autoRefreshEnabled) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      loadMoodData();
+    }, 30000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [autoRefreshEnabled, loadMoodData]);
 
   const filteredRegions = useMemo(() => {
     return regions.filter((region) => {
@@ -191,6 +205,19 @@ export default function DashboardPage() {
                 className="rounded-full bg-cyan-400 px-5 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isRefreshing ? "Refreshing..." : "Refresh Signals"}
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setAutoRefreshEnabled((currentValue) => !currentValue)
+                }
+                className={`rounded-full border px-5 py-2 text-sm font-semibold transition ${
+                  autoRefreshEnabled
+                    ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300 hover:bg-emerald-400/20"
+                    : "border-white/20 text-slate-300 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                {autoRefreshEnabled ? "Auto Refresh On" : "Auto Refresh Off"}
               </button>
 
               <a
