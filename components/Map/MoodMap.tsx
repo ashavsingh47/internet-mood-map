@@ -1,11 +1,19 @@
 "use client";
 
-import { CircleMarker, MapContainer, Popup, TileLayer } from "react-leaflet";
+import { useMemo } from "react";
+import { divIcon } from "leaflet";
+import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import type { Mood, RegionMood } from "@/data/mockMoodData";
 
 type MoodMapProps = {
   regions: RegionMood[];
   selectedRegionId: string;
+  onRegionSelect: (regionId: string) => void;
+};
+
+type MoodMarkerProps = {
+  region: RegionMood;
+  isSelected: boolean;
   onRegionSelect: (regionId: string) => void;
 };
 
@@ -21,6 +29,52 @@ const moodMapColors: Record<Mood, string> = {
   chaotic: "#a78bfa",
 };
 
+function MoodMarker({ region, isSelected, onRegionSelect }: MoodMarkerProps) {
+  const icon = useMemo(() => {
+    const color = moodMapColors[region.mood];
+
+    return divIcon({
+      className: "mood-marker-wrapper",
+      html: `
+        <div
+          class="mood-marker ${isSelected ? "mood-marker-selected" : ""}"
+          style="--mood-color: ${color}"
+        >
+          <span class="mood-marker-pulse"></span>
+          <span class="mood-marker-core"></span>
+        </div>
+      `,
+      iconSize: [32, 32],
+      iconAnchor: [16, 16],
+      popupAnchor: [0, -16],
+    });
+  }, [region.mood, isSelected]);
+
+  return (
+    <Marker
+      position={[region.lat, region.lng]}
+      icon={icon}
+      eventHandlers={{
+        click: () => onRegionSelect(region.id),
+      }}
+    >
+      <Popup>
+        <div>
+          <strong>
+            {region.city}, {region.country}
+          </strong>
+          <br />
+          Mood: {region.mood}
+          <br />
+          Score: {region.moodScore}/100
+          <br />
+          Topics: {region.trendingTopics.join(", ")}
+        </div>
+      </Popup>
+    </Marker>
+  );
+}
+
 export function MoodMap({
   regions,
   selectedRegionId,
@@ -28,6 +82,7 @@ export function MoodMap({
 }: MoodMapProps) {
   return (
     <MapContainer
+      key="internet-mood-map"
       center={[20, 0]}
       zoom={2}
       scrollWheelZoom={true}
@@ -38,40 +93,14 @@ export function MoodMap({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
-      {regions.map((region) => {
-        const isSelected = region.id === selectedRegionId;
-
-        return (
-          <CircleMarker
-            key={region.id}
-            center={[region.lat, region.lng]}
-            radius={isSelected ? 16 : 12}
-            eventHandlers={{
-              click: () => onRegionSelect(region.id),
-            }}
-            pathOptions={{
-              color: isSelected ? "#ffffff" : moodMapColors[region.mood],
-              fillColor: moodMapColors[region.mood],
-              fillOpacity: isSelected ? 0.95 : 0.75,
-              weight: isSelected ? 3 : 2,
-            }}
-          >
-            <Popup>
-              <div>
-                <strong>
-                  {region.city}, {region.country}
-                </strong>
-                <br />
-                Mood: {region.mood}
-                <br />
-                Score: {region.moodScore}/100
-                <br />
-                Topics: {region.trendingTopics.join(", ")}
-              </div>
-            </Popup>
-          </CircleMarker>
-        );
-      })}
+      {regions.map((region) => (
+        <MoodMarker
+          key={region.id}
+          region={region}
+          isSelected={region.id === selectedRegionId}
+          onRegionSelect={onRegionSelect}
+        />
+      ))}
     </MapContainer>
   );
 }
