@@ -17,8 +17,20 @@ const MoodMap = dynamic(
 
 type MoodMapWrapperProps = {
   regions: RegionMood[];
+  selectedRegionId: string;
+  onRegionSelect: (regionId: string) => void;
 };
 
-export function MoodMapWrapper({ regions }: MoodMapWrapperProps) {
-  return <MoodMap regions={regions} />;
+export function MoodMapWrapper({
+  regions,
+  selectedRegionId,
+  onRegionSelect,
+}: MoodMapWrapperProps) {
+  return (
+    <MoodMap
+      regions={regions}
+      selectedRegionId={selectedRegionId}
+      onRegionSelect={onRegionSelect}
+    />
+  );
 }

@@ -1,6 +1,11 @@
-import { MoodMapWrapper } from "@/components/Map/MoodMapWrapper";
+"use client";
+
+import { useState } from "react";
 import { RegionCard } from "@/components/Dashboard/RegionCard";
+import { RegionInsight } from "@/components/Dashboard/RegionInsight";
 import { StatCard } from "@/components/Dashboard/StatCard";
+import { MoodLegend } from "@/components/Map/MoodLegend";
+import { MoodMapWrapper } from "@/components/Map/MoodMapWrapper";
 import { mockMoodData } from "@/data/mockMoodData";
 import { moodStyles } from "@/lib/moodStyles";
 import {
@@ -11,6 +16,13 @@ import {
 
 export default function DashboardPage() {
   const topRegions = mockMoodData.slice(0, 3);
+
+  const [selectedRegionId, setSelectedRegionId] = useState(mockMoodData[0].id);
+
+  const selectedRegion =
+    mockMoodData.find((region) => region.id === selectedRegionId) ??
+    mockMoodData[0];
+
   const globalMood = getMostCommonMood(mockMoodData);
   const averageMoodScore = getAverageMoodScore(mockMoodData);
   const globalMoodLabel = formatMoodLabel(globalMood);
@@ -83,8 +95,14 @@ export default function DashboardPage() {
             </div>
 
             <div className="h-[460px] overflow-hidden rounded-2xl border border-white/10 bg-slate-900/80">
-              <MoodMapWrapper regions={mockMoodData} />
+              <MoodMapWrapper
+                regions={mockMoodData}
+                selectedRegionId={selectedRegionId}
+                onRegionSelect={setSelectedRegionId}
+              />{" "}
             </div>
+
+            <MoodLegend />
           </div>
 
           <div className="space-y-6">
@@ -109,14 +127,25 @@ export default function DashboardPage() {
               </p>
             </div>
 
+            <RegionInsight region={selectedRegion} />
+
             <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
               <h2 className="text-xl font-semibold text-cyan-300">
                 Trending Regions
               </h2>
 
+              <p className="mt-2 text-sm text-slate-400">
+                Click a region to update the insight panel.
+              </p>
+
               <div className="mt-4 space-y-3">
                 {topRegions.map((region) => (
-                  <RegionCard key={region.id} region={region} />
+                  <RegionCard
+                    key={region.id}
+                    region={region}
+                    isSelected={region.id === selectedRegionId}
+                    onClick={() => setSelectedRegionId(region.id)}
+                  />
                 ))}
               </div>
             </div>

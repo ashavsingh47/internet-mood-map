@@ -3,11 +3,21 @@ import { moodStyles } from "@/lib/moodStyles";
 
 type RegionCardProps = {
   region: RegionMood;
+  isSelected?: boolean;
+  onClick?: () => void;
 };
 
-export function RegionCard({ region }: RegionCardProps) {
+export function RegionCard({ region, isSelected, onClick }: RegionCardProps) {
   return (
-    <div className="rounded-2xl bg-white/5 p-4 transition hover:bg-white/10">
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full rounded-2xl border p-4 text-left transition ${
+        isSelected
+          ? "border-cyan-400/40 bg-cyan-400/10"
+          : "border-transparent bg-white/5 hover:bg-white/10"
+      }`}
+    >
       <div className="flex items-center justify-between gap-3">
         <p className="font-semibold">{region.country}</p>
 
@@ -26,6 +36,6 @@ export function RegionCard({ region }: RegionCardProps) {
       <p className="mt-2 text-sm text-slate-300">
         {region.trendingTopics.join(" · ")}
       </p>
-    </div>
+    </button>
   );
 }

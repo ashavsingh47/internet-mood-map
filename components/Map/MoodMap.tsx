@@ -1,10 +1,12 @@
 "use client";
 
 import { CircleMarker, MapContainer, Popup, TileLayer } from "react-leaflet";
-import type { RegionMood, Mood } from "@/data/mockMoodData";
+import type { Mood, RegionMood } from "@/data/mockMoodData";
 
 type MoodMapProps = {
   regions: RegionMood[];
+  selectedRegionId: string;
+  onRegionSelect: (regionId: string) => void;
 };
 
 const moodMapColors: Record<Mood, string> = {
@@ -19,7 +21,11 @@ const moodMapColors: Record<Mood, string> = {
   chaotic: "#a78bfa",
 };
 
-export function MoodMap({ regions }: MoodMapProps) {
+export function MoodMap({
+  regions,
+  selectedRegionId,
+  onRegionSelect,
+}: MoodMapProps) {
   return (
     <MapContainer
       center={[20, 0]}
@@ -32,33 +38,40 @@ export function MoodMap({ regions }: MoodMapProps) {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
-      {regions.map((region) => (
-        <CircleMarker
-          key={region.id}
-          center={[region.lat, region.lng]}
-          radius={12}
-          pathOptions={{
-            color: moodMapColors[region.mood],
-            fillColor: moodMapColors[region.mood],
-            fillOpacity: 0.75,
-            weight: 2,
-          }}
-        >
-          <Popup>
-            <div>
-              <strong>
-                {region.city}, {region.country}
-              </strong>
-              <br />
-              Mood: {region.mood}
-              <br />
-              Score: {region.moodScore}/100
-              <br />
-              Topics: {region.trendingTopics.join(", ")}
-            </div>
-          </Popup>
-        </CircleMarker>
-      ))}
+      {regions.map((region) => {
+        const isSelected = region.id === selectedRegionId;
+
+        return (
+          <CircleMarker
+            key={region.id}
+            center={[region.lat, region.lng]}
+            radius={isSelected ? 16 : 12}
+            eventHandlers={{
+              click: () => onRegionSelect(region.id),
+            }}
+            pathOptions={{
+              color: isSelected ? "#ffffff" : moodMapColors[region.mood],
+              fillColor: moodMapColors[region.mood],
+              fillOpacity: isSelected ? 0.95 : 0.75,
+              weight: isSelected ? 3 : 2,
+            }}
+          >
+            <Popup>
+              <div>
+                <strong>
+                  {region.city}, {region.country}
+                </strong>
+                <br />
+                Mood: {region.mood}
+                <br />
+                Score: {region.moodScore}/100
+                <br />
+                Topics: {region.trendingTopics.join(", ")}
+              </div>
+            </Popup>
+          </CircleMarker>
+        );
+      })}
     </MapContainer>
   );
 }
