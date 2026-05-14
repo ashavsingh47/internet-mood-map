@@ -127,7 +127,8 @@ export default function DashboardPage() {
           />
         </div>
         <div className="grid flex-1 gap-6 lg:grid-cols-[2fr_1fr]">
-          <div className="rounded-3xl border border-cyan-400/20 bg-cyan-400/5 p-6 shadow-2xl shadow-cyan-950/30">
+          <div className="glass-panel glass-panel-cyan rounded-3xl p-6">
+            {" "}
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-xl font-semibold">Mood Map</h2>
 
@@ -135,7 +136,6 @@ export default function DashboardPage() {
                 Simulated Live
               </span>
             </div>
-
             <div className="h-[460px] overflow-hidden rounded-2xl border border-white/10 bg-slate-900/80">
               <MoodMapWrapper
                 regions={filteredRegions}
@@ -143,16 +143,15 @@ export default function DashboardPage() {
                 onRegionSelect={setSelectedRegionId}
               />
             </div>
-
             <MoodLegend />
-
             <div className="mt-6">
               <MoodHistoryChart data={mockMoodHistory} />
             </div>
           </div>
 
           <div className="space-y-6">
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+            <div className="glass-panel card-hover rounded-3xl p-6">
+              {" "}
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-xl font-semibold text-cyan-300">
                   Current Global Mood
@@ -164,9 +163,7 @@ export default function DashboardPage() {
                   {averageMoodScore}/100
                 </span>
               </div>
-
               <p className="mt-4 text-5xl font-bold">{globalMoodLabel}</p>
-
               <p className="mt-3 text-slate-300">
                 Based on {mockMoodData.length} sampled regions, the internet is
                 currently showing a mostly {globalMood} emotional pattern.

@@ -31,11 +31,15 @@ export function RegionFilters({
   onReset,
 }: RegionFiltersProps) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-      <div className="mb-4">
-        <h2 className="text-lg font-semibold text-cyan-300">Explore Regions</h2>
+    <div className="glass-panel card-hover rounded-3xl p-6">
+      <div className="mb-5">
+        <p className="section-kicker">Explore Signals</p>
 
-        <p className="mt-1 text-sm text-slate-400">
+        <h2 className="mt-2 text-2xl font-bold tracking-tight text-white">
+          Search & Filter
+        </h2>
+
+        <p className="mt-2 text-sm leading-6 text-slate-400">
           Search by country, city, mood signal, or trending topic.
         </p>
       </div>
@@ -45,14 +49,14 @@ export function RegionFilters({
           value={searchQuery}
           onChange={(event) => onSearchChange(event.target.value)}
           placeholder="Search Canada, Tokyo, cricket, housing..."
-          className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-400/60"
+          className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-400/60 focus:bg-slate-950"
         />
 
         <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
           <select
             value={selectedMood}
             onChange={(event) => onMoodChange(event.target.value as MoodFilter)}
-            className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm capitalize text-white outline-none transition focus:border-cyan-400/60"
+            className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm capitalize text-white outline-none transition focus:border-cyan-400/60 focus:bg-slate-950"
           >
             {moodOptions.map((mood) => (
               <option key={mood} value={mood} className="bg-slate-950">
@@ -64,7 +68,7 @@ export function RegionFilters({
           <button
             type="button"
             onClick={onReset}
-            className="rounded-2xl border border-white/10 px-4 py-3 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white"
+            className="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 px-4 py-3 text-sm font-semibold text-cyan-200 transition hover:border-cyan-400/40 hover:bg-cyan-400/20"
           >
             Reset
           </button>
