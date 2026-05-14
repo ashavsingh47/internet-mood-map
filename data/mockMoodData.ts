@@ -89,3 +89,62 @@ export const mockMoodData: RegionMood[] = [
       "São Paulo is showing happy sentiment because music, football, cultural events, and weekend plans are dominating online conversations.",
   },
 ];
+export type MoodHistoryPoint = {
+  time: string;
+  happy: number;
+  stressed: number;
+  excited: number;
+  hopeful: number;
+  chaotic: number;
+};
+
+export const mockMoodHistory: MoodHistoryPoint[] = [
+  {
+    time: "8 AM",
+    happy: 42,
+    stressed: 58,
+    excited: 49,
+    hopeful: 61,
+    chaotic: 35,
+  },
+  {
+    time: "10 AM",
+    happy: 48,
+    stressed: 63,
+    excited: 55,
+    hopeful: 66,
+    chaotic: 41,
+  },
+  {
+    time: "12 PM",
+    happy: 55,
+    stressed: 70,
+    excited: 62,
+    hopeful: 72,
+    chaotic: 50,
+  },
+  {
+    time: "2 PM",
+    happy: 61,
+    stressed: 76,
+    excited: 71,
+    hopeful: 74,
+    chaotic: 59,
+  },
+  {
+    time: "4 PM",
+    happy: 67,
+    stressed: 72,
+    excited: 78,
+    hopeful: 79,
+    chaotic: 64,
+  },
+  {
+    time: "6 PM",
+    happy: 73,
+    stressed: 68,
+    excited: 84,
+    hopeful: 82,
+    chaotic: 69,
+  },
+];

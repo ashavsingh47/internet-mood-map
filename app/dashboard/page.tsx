@@ -1,12 +1,12 @@
 "use client";
-
+import { MoodHistoryChart } from "@/components/Dashboard/MoodHistoryChart";
 import { useState } from "react";
 import { RegionCard } from "@/components/Dashboard/RegionCard";
 import { RegionInsight } from "@/components/Dashboard/RegionInsight";
 import { StatCard } from "@/components/Dashboard/StatCard";
 import { MoodLegend } from "@/components/Map/MoodLegend";
 import { MoodMapWrapper } from "@/components/Map/MoodMapWrapper";
-import { mockMoodData } from "@/data/mockMoodData";
+import { mockMoodData, mockMoodHistory } from "@/data/mockMoodData";
 import { moodStyles } from "@/lib/moodStyles";
 import {
   formatMoodLabel,
@@ -103,6 +103,9 @@ export default function DashboardPage() {
             </div>
 
             <MoodLegend />
+            <div className="mt-6">
+              <MoodHistoryChart data={mockMoodHistory} />
+            </div>
           </div>
 
           <div className="space-y-6">
