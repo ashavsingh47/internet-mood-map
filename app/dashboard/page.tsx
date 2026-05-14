@@ -1,4 +1,5 @@
 "use client";
+import { PipelineStatus } from "@/components/Dashboard/PipelineStatus";
 import { LiveStatus } from "@/components/Dashboard/LiveStatus";
 import { TopMoodSpikes } from "@/components/Dashboard/TopMoodSpikes";
 import { useEffect, useState } from "react";
@@ -68,8 +69,10 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
-      <section className="mx-auto flex min-h-screen max-w-7xl flex-col px-6 py-8">
+    <main className="mood-bg min-h-screen text-white">
+      {" "}
+      <section className="mood-content mx-auto flex min-h-screen max-w-7xl flex-col px-6 py-8">
+        {" "}
         <div className="mb-8 flex flex-col justify-between gap-4 border-b border-white/10 pb-6 md:flex-row md:items-center">
           <div>
             <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
@@ -97,7 +100,7 @@ export default function DashboardPage() {
             </a>
           </div>
         </div>
-
+        <PipelineStatus />
         <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             label="Regions Sampled"
@@ -123,7 +126,6 @@ export default function DashboardPage() {
             description="Most common mood detected in the sample."
           />
         </div>
-
         <div className="grid flex-1 gap-6 lg:grid-cols-[2fr_1fr]">
           <div className="rounded-3xl border border-cyan-400/20 bg-cyan-400/5 p-6 shadow-2xl shadow-cyan-950/30">
             <div className="mb-4 flex items-center justify-between">
