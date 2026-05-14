@@ -25,7 +25,11 @@ The project is built as a portfolio-level full-stack web app using Next.js, Reac
 
 ## Live Demo
 
-Live deployment coming soon.
+Live site: https://internet-mood-map.vercel.app/
+
+Dashboard: https://internet-mood-map.vercel.app/dashboard
+
+API route: https://internet-mood-map.vercel.app/api/mood
 
 ---
 
