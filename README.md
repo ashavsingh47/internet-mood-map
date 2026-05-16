@@ -35,9 +35,17 @@ API route: https://internet-mood-map.vercel.app/api/mood
 
 ## Preview
 
-Screenshots coming soon.
+### Landing Page
 
----
+![Internet Mood Map landing page](public/screenshots/landing-page.png)
+
+### Dashboard
+
+![Internet Mood Map dashboard](public/screenshots/dashboard.png)
+
+### Mobile Dashboard
+
+## ![Internet Mood Map mobile dashboard](public/screenshots/mobile-dashboard.png)
 
 ## Core Idea
 
