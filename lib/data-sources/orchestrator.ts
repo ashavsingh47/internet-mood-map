@@ -4,9 +4,12 @@ import type {
   MoodApiResponse,
   MoodDataMode,
   RegionMood,
+  SourceSummary,
 } from "@/types/mood";
 import { MockMoodDataSource } from "./mock-source";
-import { RssMoodDataSource } from "./rss-source";
+import { RssMoodDataSource, getRssFeedUrls } from "./rss-source";
+import { matchSignalsToRegions } from "./regionMatcher";
+import { buildRealRegions } from "./realRegionBuilder";
 import type { DataSourceSnapshot, RawSignal } from "./types";
 
 const KNOWN_MODES: readonly MoodDataMode[] = [
@@ -67,71 +70,48 @@ async function loadMockSnapshot(
   });
   const result = await source.fetchSignals();
   if (!result.snapshot) {
-    // Defensive: MockMoodDataSource always returns a snapshot, but the
-    // type allows undefined so we narrow it explicitly.
     throw new Error("Mock data source did not return a snapshot.");
   }
   return { snapshot: result.snapshot, signals: result.signals };
 }
 
-/**
- * Build a quick lookup of signals grouped by the region id encoded in
- * `signal.source`. The mock source uses `"mock:<regionId>"` so we just
- * strip that prefix.
- *
- * Signals whose source does not follow the convention are placed under
- * an empty key so they don't accidentally pollute a real region.
- */
 function groupSignalsByRegionId(
   signals: readonly RawSignal[],
 ): Map<string, RawSignal[]> {
   const map = new Map<string, RawSignal[]>();
-
   for (const signal of signals) {
     const id = signal.source.startsWith(MOCK_SIGNAL_PREFIX)
       ? signal.source.slice(MOCK_SIGNAL_PREFIX.length)
       : "";
     const existing = map.get(id);
-    if (existing) {
-      existing.push(signal);
-    } else {
-      map.set(id, [signal]);
-    }
+    if (existing) existing.push(signal);
+    else map.set(id, [signal]);
   }
-
   return map;
 }
 
 /**
  * Enrich each region with NLP-derived metadata (confidence, matched
- * keywords, signal count) without changing the existing mood/moodScore
- * fields. This keeps the dashboard visually identical for mock /
- * live-simulation modes while making the NLP output observable through
- * the API for any future UI work.
+ * keywords, signal count) WITHOUT changing the existing mood/moodScore
+ * fields. Used for the mock/live-simulation paths so the dashboard looks
+ * identical while the NLP output is still observable through the API.
  */
-function enrichRegionsWithNlp(
+function enrichRegionsWithMockNlp(
   regions: readonly RegionMood[],
   signals: readonly RawSignal[],
 ): RegionMood[] {
-  if (signals.length === 0) {
-    return regions.map((region) => ({ ...region }));
-  }
+  if (signals.length === 0) return regions.map((region) => ({ ...region }));
 
   const signalsByRegion = groupSignalsByRegionId(signals);
 
   return regions.map((region) => {
     const regionSignals = signalsByRegion.get(region.id) ?? [];
-    if (regionSignals.length === 0) {
-      return { ...region };
-    }
+    if (regionSignals.length === 0) return { ...region };
 
-    // Combine signal text plus any pre-extracted keywords so the
-    // dictionary has the best chance of finding evidence.
     const texts = regionSignals.map((signal) => {
       const keywordsBlob = (signal.keywords ?? []).join(" ");
       return `${signal.text} ${keywordsBlob}`.trim();
     });
-
     const aggregate = aggregateEmotionScores(texts);
 
     return {
@@ -143,23 +123,134 @@ function enrichRegionsWithNlp(
   });
 }
 
+type RealFetchOutcome =
+  | { kind: "unavailable"; warnings: string[] }
+  | { kind: "empty"; warnings: string[] }
+  | { kind: "no-matches"; warnings: string[]; sourceSummary: SourceSummary }
+  | { kind: "error"; warnings: string[] }
+  | {
+      kind: "ok";
+      warnings: string[];
+      regions: RegionMood[];
+      sourceSummary: SourceSummary;
+    };
+
+/**
+ * Try to produce real-derived regions from the RSS data source.
+ *
+ * This function NEVER throws — every failure path is encoded in the
+ * returned discriminated union so the orchestrator can pick a sensible
+ * fallback.
+ */
+async function tryFetchRealRegions(
+  options: BuildMoodSnapshotOptions,
+): Promise<RealFetchOutcome> {
+  const feedUrls = getRssFeedUrls();
+  const rss = new RssMoodDataSource();
+
+  if (!rss.isAvailable()) {
+    return {
+      kind: "unavailable",
+      warnings: [
+        "Real data sources are not configured; set RSS_FEED_URLS to enable hybrid/real mode.",
+      ],
+    };
+  }
+
+  try {
+    const result = await rss.fetchSignals({ signal: options.signal });
+    const warnings = [...result.warnings];
+
+    if (result.signals.length === 0) {
+      return { kind: "empty", warnings };
+    }
+
+    const { matched, unmatched } = matchSignalsToRegions(result.signals);
+    const baseSummary: SourceSummary = {
+      sourceCount: feedUrls.length,
+      signalCount: result.signals.length,
+      matchedSignalCount: matched.length,
+      unmatchedSignalCount: unmatched.length,
+    };
+
+    if (matched.length === 0) {
+      warnings.push(
+        `Fetched ${result.signals.length} signal(s) but none mapped to a known region.`,
+      );
+      return {
+        kind: "no-matches",
+        warnings,
+        sourceSummary: baseSummary,
+      };
+    }
+
+    const realRegions = buildRealRegions(matched);
+
+    return {
+      kind: "ok",
+      warnings,
+      regions: realRegions,
+      sourceSummary: baseSummary,
+    };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : String(error);
+    return {
+      kind: "error",
+      warnings: [`Real data source failed: ${message}.`],
+    };
+  }
+}
+
+/**
+ * Replace mock regions with real-derived ones where available.
+ * Used by hybrid mode so the map always has 17 markers.
+ */
+function blendRealAndMockRegions(
+  realRegions: readonly RegionMood[],
+  mockRegions: readonly RegionMood[],
+): RegionMood[] {
+  if (realRegions.length === 0) return mockRegions.map((r) => ({ ...r }));
+
+  const realById = new Map(realRegions.map((region) => [region.id, region]));
+  return mockRegions.map((mockRegion) => {
+    const real = realById.get(mockRegion.id);
+    return real ?? { ...mockRegion };
+  });
+}
+
+function summarize(regions: readonly RegionMood[]) {
+  const globalMood = getMostCommonMood([...regions]);
+  const averageMoodScore = getAverageMoodScore([...regions]);
+  const highActivityZones = regions.filter(
+    (region) => region.activityLevel === "high",
+  ).length;
+  return {
+    regionsSampled: regions.length,
+    globalMood,
+    averageMoodScore,
+    highActivityZones,
+  };
+}
+
 /**
  * The single entry point used by /api/mood.
  *
- * Honors the requested mode but always degrades gracefully:
- *   - "mock"            -> deterministic mock data (no random drift)
- *   - "live-simulation" -> mock data + small random drift (current MVP behavior)
- *   - "hybrid" / "real" -> try the real source; on any failure or empty
- *                         result, fall back to live-simulation and add a
- *                         warning so the client can show a badge.
+ * Per mode:
+ *   - "mock"            : deterministic mock data + NLP-enriched fields
+ *   - "live-simulation" : mock data + random drift + NLP-enriched fields
+ *   - "hybrid"          : real RSS for regions that match, mock fallback
+ *                         for the rest. Falls back fully if RSS fails.
+ *   - "real"            : only real RSS regions. Falls back to
+ *                         live-simulation entirely if RSS is unavailable,
+ *                         empty, errors, or produces zero region matches.
  *
- * NLP scoring (Phase 3) runs against whatever signals the active source
- * produces; the result is attached to each region as optional metadata
- * (`confidence`, `matchedKeywords`, `signalCount`). Existing fields are
- * untouched, so existing UI keeps working unchanged.
+ * Always returns a valid MoodApiResponse with at least one region for
+ * mock/live-simulation/hybrid; "real" can validly return fewer than 17
+ * regions (only those with matched signals) when RSS is working.
  *
- * Hybrid/real modes still fall back to live-simulation until Phase 4
- * wires actual signal-to-region mapping for external sources.
+ * History points stay mock in Phase 4. Phase 6 introduces snapshot-backed
+ * history.
  */
 export async function buildMoodSnapshot(
   options: BuildMoodSnapshotOptions,
@@ -167,77 +258,100 @@ export async function buildMoodSnapshot(
   const warnings: string[] = [];
   const requested = options.requestedMode;
   let resolvedMode: MoodDataMode = requested;
+  let sourceSummary: SourceSummary | undefined;
+  let regions: RegionMood[] = [];
 
   const wantsReal = requested === "real" || requested === "hybrid";
+  const mock = await loadMockSnapshot({
+    simulateLiveDrift: requested !== "mock",
+  });
 
   if (wantsReal) {
-    const rssSource = new RssMoodDataSource();
-    const available = await Promise.resolve(rssSource.isAvailable());
+    const outcome = await tryFetchRealRegions(options);
+    warnings.push(...outcome.warnings);
 
-    if (!available) {
-      warnings.push(
-        "Real data sources are not configured; falling back to live-simulation.",
-      );
-      resolvedMode = "live-simulation";
-    } else {
-      try {
-        const result = await rssSource.fetchSignals({ signal: options.signal });
-        warnings.push(...result.warnings);
+    if (outcome.kind === "ok") {
+      sourceSummary = outcome.sourceSummary;
 
-        if (!result.snapshot && result.signals.length === 0) {
-          warnings.push(
-            "No usable signals were produced by real data sources; falling back to live-simulation.",
-          );
-          resolvedMode = "live-simulation";
-        } else if (!result.snapshot) {
-          // Signals exist but we don't yet map them onto the 17-region
-          // template (Phase 4). NLP scoring is wired and ready for that
-          // mapping; for now we still fall back to mock.
-          warnings.push(
-            "Signal-to-region mapping not yet implemented; falling back to live-simulation.",
-          );
-          resolvedMode = "live-simulation";
-        }
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : String(error);
-        warnings.push(
-          `Real data source failed (${message}); falling back to live-simulation.`,
+      if (requested === "hybrid") {
+        // Mix real-derived regions onto the full 17-region template so
+        // the map and dashboard stay populated.
+        regions = blendRealAndMockRegions(outcome.regions, mock.snapshot.regions);
+        // Mock-filled regions also get NLP enrichment for consistency.
+        regions = enrichRegionsWithMockNlpExcept(
+          regions,
+          mock.signals,
+          new Set(outcome.regions.map((r) => r.id)),
         );
-        resolvedMode = "live-simulation";
+        // The blend kept the requested mode unchanged.
+        resolvedMode = "hybrid";
+      } else {
+        // real: return ONLY the matched regions.
+        regions = outcome.regions;
+        resolvedMode = "real";
       }
+    } else {
+      // Any non-ok outcome means we couldn't produce real regions.
+      // Fall back to live-simulation across the full 17-region template.
+      if (outcome.kind === "no-matches") {
+        sourceSummary = outcome.sourceSummary;
+      }
+      regions = enrichRegionsWithMockNlp(mock.snapshot.regions, mock.signals);
+      resolvedMode = "live-simulation";
+      warnings.push("Falling back to live-simulation.");
     }
+  } else {
+    // mock / live-simulation
+    regions = enrichRegionsWithMockNlp(mock.snapshot.regions, mock.signals);
+    resolvedMode = requested;
   }
-
-  const { snapshot, signals } = await loadMockSnapshot({
-    simulateLiveDrift: resolvedMode !== "mock",
-  });
-
-  const enrichedRegions = enrichRegionsWithNlp(snapshot.regions, signals);
-
-  const globalMood = getMostCommonMood(enrichedRegions);
-  const averageMoodScore = getAverageMoodScore(enrichedRegions);
-  const highActivityRegions = enrichedRegions.filter((region) => {
-    return region.activityLevel === "high";
-  });
 
   const payload: MoodApiResponse = {
     status: "success",
     mode: resolvedMode,
     generatedAt: new Date().toISOString(),
-    summary: {
-      regionsSampled: enrichedRegions.length,
-      globalMood,
-      averageMoodScore,
-      highActivityZones: highActivityRegions.length,
-    },
-    regions: enrichedRegions,
-    history: snapshot.history,
+    summary: summarize(regions),
+    regions,
+    history: mock.snapshot.history,
   };
 
-  if (warnings.length > 0) {
-    payload.warnings = warnings;
-  }
+  if (warnings.length > 0) payload.warnings = warnings;
+  if (sourceSummary) payload.sourceSummary = sourceSummary;
 
   return { payload, resolvedMode, warnings };
+}
+
+/**
+ * Like enrichRegionsWithMockNlp but skips a set of region ids (used in
+ * hybrid mode so we don't overwrite the NLP metadata already attached by
+ * the real-region builder).
+ */
+function enrichRegionsWithMockNlpExcept(
+  regions: readonly RegionMood[],
+  signals: readonly RawSignal[],
+  skipIds: ReadonlySet<string>,
+): RegionMood[] {
+  if (signals.length === 0) return regions.map((region) => ({ ...region }));
+
+  const signalsByRegion = groupSignalsByRegionId(signals);
+
+  return regions.map((region) => {
+    if (skipIds.has(region.id)) return region;
+
+    const regionSignals = signalsByRegion.get(region.id) ?? [];
+    if (regionSignals.length === 0) return { ...region };
+
+    const texts = regionSignals.map((signal) => {
+      const keywordsBlob = (signal.keywords ?? []).join(" ");
+      return `${signal.text} ${keywordsBlob}`.trim();
+    });
+    const aggregate = aggregateEmotionScores(texts);
+
+    return {
+      ...region,
+      confidence: aggregate.confidence,
+      matchedKeywords: aggregate.matchedKeywords,
+      signalCount: aggregate.signalCount,
+    };
+  });
 }

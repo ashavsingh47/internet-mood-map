@@ -58,6 +58,18 @@ export type MoodSummary = {
 };
 
 /**
+ * High-level stats about the data sources that contributed to a single
+ * /api/mood response. Optional in the API payload so older clients are
+ * unaffected.
+ */
+export type SourceSummary = {
+  sourceCount: number;
+  signalCount: number;
+  matchedSignalCount: number;
+  unmatchedSignalCount: number;
+};
+
+/**
  * Modes used to describe how the data was sourced. This is informational
  * today (the MVP always uses the live-simulation path) but is wired through
  * so later phases can add hybrid/real data sources without changing the
@@ -82,4 +94,9 @@ export type MoodApiResponse = {
    * everything went cleanly so existing clients see no shape change.
    */
   warnings?: string[];
+  /**
+   * Stats about the data sources that contributed to this response.
+   * Present only when real / hybrid modes actually fetched signals.
+   */
+  sourceSummary?: SourceSummary;
 };
