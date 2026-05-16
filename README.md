@@ -331,7 +331,13 @@ This project demonstrates experience with:
 
 ## Status
 
-MVP in progress.
+MVP complete and deployed.
+
+Live app: https://internet-mood-map.vercel.app/
+
+Current version includes a working landing page, interactive dashboard, API-powered mood data, live simulated updates, search/filtering, mood history chart, pulsing map markers, and README screenshots.
+
+Next phase will focus on real data sources, NLP sentiment analysis, AI-generated explanations, and database-backed mood history.
 
 Completed:
 
