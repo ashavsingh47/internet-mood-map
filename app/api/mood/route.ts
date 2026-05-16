@@ -1,10 +1,10 @@
-import {
-  mockMoodData,
-  mockMoodHistory,
-  type MoodHistoryPoint,
-  type RegionMood,
-} from "@/data/mockMoodData";
+import { mockMoodData, mockMoodHistory } from "@/data/mockMoodData";
 import { getAverageMoodScore, getMostCommonMood } from "@/lib/moodUtils";
+import type {
+  MoodApiResponse,
+  MoodHistoryPoint,
+  RegionMood,
+} from "@/types/mood";
 
 export const dynamic = "force-dynamic";
 
@@ -52,24 +52,23 @@ export async function GET() {
     return region.activityLevel === "high";
   });
 
-  return Response.json(
-    {
-      status: "success",
-      mode: "live-simulation",
-      generatedAt: new Date().toISOString(),
-      summary: {
-        regionsSampled: liveRegions.length,
-        globalMood,
-        averageMoodScore,
-        highActivityZones: highActivityRegions.length,
-      },
-      regions: liveRegions,
-      history: liveHistory,
+  const payload: MoodApiResponse = {
+    status: "success",
+    mode: "live-simulation",
+    generatedAt: new Date().toISOString(),
+    summary: {
+      regionsSampled: liveRegions.length,
+      globalMood,
+      averageMoodScore,
+      highActivityZones: highActivityRegions.length,
     },
-    {
-      headers: {
-        "Cache-Control": "no-store",
-      },
+    regions: liveRegions,
+    history: liveHistory,
+  };
+
+  return Response.json(payload, {
+    headers: {
+      "Cache-Control": "no-store",
     },
-  );
+  });
 }

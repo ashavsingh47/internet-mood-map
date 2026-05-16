@@ -10,31 +10,22 @@ import { StatCard } from "@/components/Dashboard/StatCard";
 import { TopMoodSpikes } from "@/components/Dashboard/TopMoodSpikes";
 import { MoodLegend } from "@/components/Map/MoodLegend";
 import { MoodMapWrapper } from "@/components/Map/MoodMapWrapper";
-import type { Mood, MoodHistoryPoint, RegionMood } from "@/data/mockMoodData";
+import { fetchMoodData } from "@/lib/moodApi";
 import { moodStyles } from "@/lib/moodStyles";
 import { formatMoodLabel } from "@/lib/moodUtils";
+import type {
+  Mood,
+  MoodHistoryPoint,
+  MoodSummary,
+  RegionMood,
+} from "@/types/mood";
 
 type MoodFilter = Mood | "all";
-
-type MoodApiResponse = {
-  status: string;
-  generatedAt: string;
-  summary: {
-    regionsSampled: number;
-    globalMood: Mood;
-    averageMoodScore: number;
-    highActivityZones: number;
-  };
-  regions: RegionMood[];
-  history: MoodHistoryPoint[];
-};
 
 export default function DashboardPage() {
   const [regions, setRegions] = useState<RegionMood[]>([]);
   const [history, setHistory] = useState<MoodHistoryPoint[]>([]);
-  const [summary, setSummary] = useState<MoodApiResponse["summary"] | null>(
-    null,
-  );
+  const [summary, setSummary] = useState<MoodSummary | null>(null);
   const [generatedAt, setGeneratedAt] = useState("");
   const [selectedRegionId, setSelectedRegionId] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -49,15 +40,7 @@ export default function DashboardPage() {
       setErrorMessage("");
       setIsRefreshing(true);
 
-      const response = await fetch("/api/mood", {
-        cache: "no-store",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to load mood data.");
-      }
-
-      const data = (await response.json()) as MoodApiResponse;
+      const data = await fetchMoodData();
 
       setRegions(data.regions);
       setHistory(data.history);

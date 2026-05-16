@@ -1,26 +1,8 @@
-export type Mood =
-  | "happy"
-  | "angry"
-  | "sad"
-  | "stressed"
-  | "excited"
-  | "confused"
-  | "fearful"
-  | "hopeful"
-  | "chaotic";
+import type { Mood, MoodHistoryPoint, RegionMood } from "@/types/mood";
 
-export type RegionMood = {
-  id: string;
-  country: string;
-  city: string;
-  lat: number;
-  lng: number;
-  mood: Mood;
-  moodScore: number;
-  activityLevel: "low" | "medium" | "high";
-  trendingTopics: string[];
-  explanation: string;
-};
+// Re-exported so existing imports from "@/data/mockMoodData" keep working.
+// New code should import these types directly from "@/types/mood".
+export type { Mood, MoodHistoryPoint, RegionMood };
 
 export const mockMoodData: RegionMood[] = [
   {
@@ -245,15 +227,6 @@ export const mockMoodData: RegionMood[] = [
       "Sydney is showing sad sentiment because cost-of-living concerns, weather frustration, and mixed local news are weighing down the emotional tone.",
   },
 ];
-
-export type MoodHistoryPoint = {
-  time: string;
-  happy: number;
-  stressed: number;
-  excited: number;
-  hopeful: number;
-  chaotic: number;
-};
 
 export const mockMoodHistory: MoodHistoryPoint[] = [
   {
