@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { DataSourceStatus } from "@/components/Dashboard/DataSourceStatus";
 import { LiveStatus } from "@/components/Dashboard/LiveStatus";
 import { MoodHistoryChart } from "@/components/Dashboard/MoodHistoryChart";
 import { RegionCard } from "@/components/Dashboard/RegionCard";
@@ -15,12 +16,17 @@ import { moodStyles } from "@/lib/moodStyles";
 import { formatMoodLabel } from "@/lib/moodUtils";
 import type {
   Mood,
+  MoodApiResponse,
+  MoodDataMode,
   MoodHistoryPoint,
   MoodSummary,
   RegionMood,
+  SourceSummary,
 } from "@/types/mood";
 
 type MoodFilter = Mood | "all";
+type HistorySource = NonNullable<MoodApiResponse["historySource"]>;
+type ExplanationSource = NonNullable<MoodApiResponse["explanationSource"]>;
 
 export default function DashboardPage() {
   const [regions, setRegions] = useState<RegionMood[]>([]);
@@ -35,6 +41,17 @@ export default function DashboardPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
 
+  // Phase 8 metadata. All optional on the wire — kept here with safe
+  // defaults so older API responses still render cleanly.
+  const [mode, setMode] = useState<MoodDataMode>("live-simulation");
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const [sourceSummary, setSourceSummary] = useState<SourceSummary | undefined>(
+    undefined,
+  );
+  const [historySource, setHistorySource] = useState<HistorySource>("mock");
+  const [explanationSource, setExplanationSource] =
+    useState<ExplanationSource>("rule-based");
+
   const loadMoodData = useCallback(async () => {
     try {
       setErrorMessage("");
@@ -46,6 +63,12 @@ export default function DashboardPage() {
       setHistory(data.history);
       setSummary(data.summary);
       setGeneratedAt(data.generatedAt);
+
+      setMode(data.mode ?? "live-simulation");
+      setWarnings(data.warnings ?? []);
+      setSourceSummary(data.sourceSummary);
+      setHistorySource(data.historySource ?? "mock");
+      setExplanationSource(data.explanationSource ?? "rule-based");
 
       setSelectedRegionId((currentRegionId) => {
         return currentRegionId || data.regions[0]?.id || "";
@@ -175,7 +198,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 lg:justify-end">
-            <LiveStatus />
+            <LiveStatus mode={mode} />
 
             <button
               type="button"
@@ -208,6 +231,14 @@ export default function DashboardPage() {
             </a>
           </div>
         </header>
+
+        <DataSourceStatus
+          mode={mode}
+          historySource={historySource}
+          explanationSource={explanationSource}
+          sourceSummary={sourceSummary}
+          warnings={warnings}
+        />
 
         <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
