@@ -14,9 +14,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://internet-mood-map.vercel.app"),
   title: "Internet Mood Map",
   description:
     "A real-time inspired global mood intelligence dashboard that visualizes emotional signals across the internet.",
+  icons: {
+    icon: "/mood-icon.svg",
+  },
+  openGraph: {
+    title: "Internet Mood Map",
+    description:
+      "Explore global internet mood through interactive maps, live-style signals, mood spikes, and regional explanations.",
+    url: "https://internet-mood-map.vercel.app",
+    siteName: "Internet Mood Map",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
