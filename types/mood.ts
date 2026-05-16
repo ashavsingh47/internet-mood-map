@@ -31,6 +31,14 @@ export type RegionMood = {
   activityLevel: ActivityLevel;
   trendingTopics: string[];
   explanation: string;
+  /**
+   * Optional NLP-derived signal metadata. Populated by the data-source
+   * orchestrator when emotion scoring is available; absent on raw mock
+   * literals so the dataset stays readable.
+   */
+  confidence?: number;
+  matchedKeywords?: string[];
+  signalCount?: number;
 };
 
 export type MoodHistoryPoint = {
