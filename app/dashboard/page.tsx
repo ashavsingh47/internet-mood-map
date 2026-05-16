@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { LiveStatus } from "@/components/Dashboard/LiveStatus";
 import { MoodHistoryChart } from "@/components/Dashboard/MoodHistoryChart";
-import { PipelineStatus } from "@/components/Dashboard/PipelineStatus";
 import { RegionCard } from "@/components/Dashboard/RegionCard";
 import { RegionFilters } from "@/components/Dashboard/RegionFilters";
 import { RegionInsight } from "@/components/Dashboard/RegionInsight";
@@ -53,6 +52,7 @@ export default function DashboardPage() {
       const response = await fetch("/api/mood", {
         cache: "no-store",
       });
+
       if (!response.ok) {
         throw new Error("Failed to load mood data.");
       }
@@ -78,9 +78,11 @@ export default function DashboardPage() {
       setIsRefreshing(false);
     }
   }, []);
+
   useEffect(() => {
     loadMoodData();
   }, [loadMoodData]);
+
   useEffect(() => {
     if (!autoRefreshEnabled) {
       return;
@@ -136,9 +138,7 @@ export default function DashboardPage() {
       <main className="mood-bg flex min-h-screen items-center justify-center px-6 text-white">
         <div className="glass-panel rounded-3xl p-8 text-center">
           <p className="section-kicker">Loading Mood Intelligence</p>
-
           <h1 className="mt-3 text-3xl font-bold">Fetching live signals...</h1>
-
           <p className="mt-3 text-slate-400">
             The dashboard is requesting mood data from the API.
           </p>
@@ -152,9 +152,7 @@ export default function DashboardPage() {
       <main className="mood-bg flex min-h-screen items-center justify-center px-6 text-white">
         <div className="glass-panel rounded-3xl p-8 text-center">
           <p className="section-kicker">Mood API Error</p>
-
           <h1 className="mt-3 text-3xl font-bold">Could not load dashboard</h1>
-
           <p className="mt-3 text-slate-400">
             {errorMessage || "No mood data was returned from the API."}
           </p>
@@ -169,6 +167,7 @@ export default function DashboardPage() {
   const globalMood = summary.globalMood;
   const averageMoodScore = summary.averageMoodScore;
   const globalMoodLabel = formatMoodLabel(globalMood);
+
   const formattedGeneratedAt = new Date(generatedAt).toLocaleTimeString([], {
     hour: "numeric",
     minute: "2-digit",
@@ -177,76 +176,71 @@ export default function DashboardPage() {
 
   return (
     <main className="mood-bg min-h-screen text-white">
-      <section className="mood-content mx-auto flex min-h-screen max-w-7xl flex-col px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mb-8 flex flex-col justify-between gap-4 border-b border-white/10 pb-6 md:flex-row md:items-center">
+      <section className="mood-content mx-auto flex min-h-screen max-w-7xl flex-col px-4 py-4 sm:px-6 lg:px-8">
+        <header className="mb-5 flex flex-col justify-between gap-4 border-b border-white/10 pb-4 lg:flex-row lg:items-center">
           <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-cyan-300">
-              Live Mood Intelligence
-            </p>
+            <p className="section-kicker">Live Mood Intelligence</p>
 
-            <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
+            <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
               Global Internet Mood Dashboard
             </h1>
 
-            <p className="mt-3 max-w-2xl text-slate-300">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">
               Track emotional signals across regions using mood scores, trending
-              topics, and AI-powered explanations.
+              topics, map markers, and AI-style explanations.
             </p>
           </div>
 
-          <div className="flex flex-col gap-3 md:items-end">
+          <div className="flex flex-wrap items-center gap-3 lg:justify-end">
             <LiveStatus />
 
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={loadMoodData}
-                disabled={isRefreshing}
-                className="rounded-full bg-cyan-400 px-5 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isRefreshing ? "Refreshing..." : "Refresh Signals"}
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  setAutoRefreshEnabled((currentValue) => !currentValue)
-                }
-                className={`rounded-full border px-5 py-2 text-sm font-semibold transition ${
-                  autoRefreshEnabled
-                    ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300 hover:bg-emerald-400/20"
-                    : "border-white/20 text-slate-300 hover:bg-white/10 hover:text-white"
-                }`}
-              >
-                {autoRefreshEnabled ? "Auto Refresh On" : "Auto Refresh Off"}
-              </button>
+            <button
+              type="button"
+              onClick={loadMoodData}
+              disabled={isRefreshing}
+              className="rounded-full bg-cyan-400 px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isRefreshing ? "Refreshing..." : "Refresh Signals"}
+            </button>
 
-              <a
-                href="/"
-                className="rounded-full border border-white/20 px-5 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
-              >
-                Back to Home
-              </a>
-            </div>
+            <button
+              type="button"
+              onClick={() =>
+                setAutoRefreshEnabled((currentValue) => !currentValue)
+              }
+              className={`rounded-full border px-4 py-2 text-sm font-bold transition ${
+                autoRefreshEnabled
+                  ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300 hover:bg-emerald-400/20"
+                  : "border-white/20 text-slate-300 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              {autoRefreshEnabled ? "Auto On" : "Auto Off"}
+            </button>
+
+            <a
+              href="/"
+              className="rounded-full border border-white/20 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/10"
+            >
+              Home
+            </a>
           </div>
-        </div>
+        </header>
 
-        <PipelineStatus />
-
-        <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             label="Regions Sampled"
             value={summary.regionsSampled}
-            description="Regions currently returned by the mood API."
+            description="Regions returned by the mood API."
           />
 
           <StatCard
-            label="Average Mood Score"
+            label="Average Mood"
             value={`${averageMoodScore}/100`}
-            description="Average emotional intensity across all regions."
+            description="Average emotional signal intensity."
           />
 
           <StatCard
-            label="High Activity Zones"
+            label="High Activity"
             value={summary.highActivityZones}
             description="Regions with strong conversation activity."
           />
@@ -254,15 +248,15 @@ export default function DashboardPage() {
           <StatCard
             label="Global Mood"
             value={globalMoodLabel}
-            description="Most common mood detected in the API response."
+            description="Most common mood in current API response."
           />
         </div>
 
-        <div className="grid flex-1 gap-6 lg:grid-cols-[2fr_1fr]">
-          <div className="glass-panel glass-panel-cyan rounded-3xl p-6">
-            <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+        <div className="grid flex-1 gap-5 lg:grid-cols-[1.45fr_0.9fr]">
+          <div className="glass-panel glass-panel-cyan rounded-3xl p-5">
+            <div className="mb-3 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
               <div>
-                <h2 className="text-xl font-semibold">Mood Map</h2>
+                <h2 className="text-xl font-bold">Mood Map</h2>
 
                 <p className="mt-1 text-sm text-slate-400">
                   API generated at{" "}
@@ -272,12 +266,12 @@ export default function DashboardPage() {
                 </p>
               </div>
 
-              <span className="w-fit rounded-full bg-emerald-400/10 px-3 py-1 text-sm text-emerald-300">
+              <span className="w-fit rounded-full bg-emerald-400/10 px-3 py-1 text-sm font-semibold text-emerald-300">
                 API Powered
               </span>
             </div>
 
-            <div className="h-[360px] overflow-hidden rounded-2xl border border-white/10 bg-slate-900/80 sm:h-[430px] lg:h-[520px]">
+            <div className="h-[355px] overflow-hidden rounded-2xl border border-white/10 bg-slate-900/80 sm:h-[410px] xl:h-[460px]">
               <MoodMapWrapper
                 regions={filteredRegions}
                 selectedRegionId={selectedRegionId}
@@ -285,30 +279,29 @@ export default function DashboardPage() {
               />
             </div>
 
-            <MoodLegend />
-
-            <div className="mt-6">
+            <div className="mt-4 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+              <MoodLegend />
               <MoodHistoryChart data={history} />
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="glass-panel card-hover rounded-3xl p-6">
+          <aside className="space-y-5">
+            <div className="glass-panel card-hover rounded-3xl p-5">
               <div className="flex items-center justify-between gap-3">
-                <h2 className="text-xl font-semibold text-cyan-300">
+                <h2 className="text-lg font-bold text-cyan-300">
                   Current Global Mood
                 </h2>
 
                 <span
-                  className={`rounded-full border px-3 py-1 text-xs font-medium ${moodStyles[globalMood]}`}
+                  className={`rounded-full border px-3 py-1 text-xs font-bold ${moodStyles[globalMood]}`}
                 >
                   {averageMoodScore}/100
                 </span>
               </div>
 
-              <p className="mt-4 text-5xl font-bold">{globalMoodLabel}</p>
+              <p className="mt-3 text-4xl font-black">{globalMoodLabel}</p>
 
-              <p className="mt-3 text-slate-300">
+              <p className="mt-2 text-sm leading-6 text-slate-300">
                 Based on {summary.regionsSampled} API-loaded regions, the
                 internet is currently showing a mostly {globalMood} emotional
                 pattern.
@@ -330,18 +323,15 @@ export default function DashboardPage() {
               onReset={handleResetFilters}
             />
 
-            <div className="glass-panel card-hover rounded-3xl p-6">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-xl font-semibold text-cyan-300">
-                    Matching Regions
-                  </h2>
+            <div className="glass-panel card-hover rounded-3xl p-5">
+              <div>
+                <h2 className="text-xl font-bold text-cyan-300">
+                  Matching Regions
+                </h2>
 
-                  <p className="mt-2 text-sm text-slate-400">
-                    Showing {filteredRegions.length} of {regions.length}{" "}
-                    regions.
-                  </p>
-                </div>
+                <p className="mt-1 text-sm text-slate-400">
+                  Showing {filteredRegions.length} of {regions.length} regions.
+                </p>
               </div>
 
               <div className="mt-4 space-y-3">
@@ -363,7 +353,7 @@ export default function DashboardPage() {
                 )}
               </div>
             </div>
-          </div>
+          </aside>
         </div>
       </section>
     </main>

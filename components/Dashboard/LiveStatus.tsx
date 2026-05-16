@@ -25,23 +25,16 @@ export function LiveStatus() {
     : "Loading...";
 
   return (
-    <div className="rounded-3xl border border-emerald-400/20 bg-emerald-400/10 px-5 py-4">
-      <div className="flex items-center gap-2">
-        <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+    <div className="flex items-center gap-3 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-4 py-2">
+      <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_16px_rgba(52,211,153,0.8)]" />
 
-        <p className="text-sm font-semibold text-emerald-300">
-          Live simulation
+      <div className="leading-none">
+        <p className="text-xs font-bold text-emerald-300">Live simulation</p>
+
+        <p className="mt-1 text-xs text-slate-400">
+          Updated <span className="text-white">{formattedTime}</span>
         </p>
       </div>
-
-      <p className="mt-2 text-sm text-slate-300">
-        Last updated{" "}
-        <span className="font-semibold text-white">{formattedTime}</span>
-      </p>
-
-      <p className="mt-1 text-xs text-slate-400">
-        Mock mood signals refresh visually every 30 seconds.
-      </p>
     </div>
   );
 }
