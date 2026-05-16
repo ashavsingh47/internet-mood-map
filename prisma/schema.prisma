@@ -1,0 +1,73 @@
+// Internet Mood Map — Prisma schema
+//
+// Optional database layer. The app runs without any database configured;
+// when DATABASE_URL is set the helpers in lib/db can persist mood
+// snapshots over time for the historical view (Phase 6).
+//
+// Provider is PostgreSQL so this works with Supabase, Neon, Railway,
+// docker-compose Postgres, or any plain Postgres instance.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // Pooled connection used at runtime by the Prisma client.
+  url       = env("DATABASE_URL")
+  // Direct (non-pooled) connection used by `prisma migrate` and shadow DBs.
+  // Optional: only required when using a pooler like Supabase's PgBouncer.
+  directUrl = env("DIRECT_URL")
+}
+
+/// One of the 17 dashboard regions. Static metadata only (lat/lng never
+/// changes); time-series mood data lives in MoodSnapshot.
+model Region {
+  id        String   @id
+  country   String
+  city      String
+  lat       Float
+  lng       Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  snapshots MoodSnapshot[]
+  topics    TrendTopic[]
+}
+
+/// One mood reading for one region at a point in time.
+/// Multiple snapshots per region per day are expected.
+model MoodSnapshot {
+  id          String   @id @default(cuid())
+  regionId    String
+  mood        String
+  moodScore   Int
+  confidence  Float?
+  signalCount Int?
+  sourceMode  String
+  generatedAt DateTime
+  createdAt   DateTime @default(now())
+
+  region Region       @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  topics TrendTopic[]
+
+  @@index([regionId, generatedAt])
+  @@index([generatedAt])
+}
+
+/// A trending topic / matched keyword attached to a region (and optionally
+/// a specific snapshot). Kept separate so we can dedupe and query topic
+/// frequency cheaply.
+model TrendTopic {
+  id         String   @id @default(cuid())
+  regionId   String
+  snapshotId String?
+  topic      String
+  createdAt  DateTime @default(now())
+
+  region   Region        @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  snapshot MoodSnapshot? @relation(fields: [snapshotId], references: [id], onDelete: SetNull)
+
+  @@index([regionId])
+  @@index([snapshotId])
+}

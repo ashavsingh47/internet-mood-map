@@ -276,6 +276,59 @@ http://localhost:3000/api/mood
 
 ---
 
+## Optional Database Setup (Supabase / Postgres + Prisma)
+
+The app runs fully without a database. When you want to persist mood
+snapshots over time (powers Phase 6 historical history), point Prisma at
+any PostgreSQL instance — Supabase, Neon, Railway, or local Docker.
+
+### 1. Configure environment variables
+
+Copy `.env.example` to `.env.local` and fill in:
+
+```bash
+DATABASE_URL=postgresql://...           # pooled / runtime connection
+DIRECT_URL=postgresql://...             # direct connection for migrations (Supabase)
+ENABLE_SNAPSHOT_WRITES=true             # opt-in: write a snapshot on each /api/mood call
+```
+
+`ENABLE_SNAPSHOT_WRITES` is **opt-in**. Just setting `DATABASE_URL` does
+NOT make `/api/mood` write to the DB — you have to explicitly enable it.
+
+### 2. Generate the Prisma client
+
+```bash
+npm run prisma:generate
+```
+
+(`postinstall` also runs this automatically, so a fresh `npm install`
+should already have the client ready.)
+
+### 3. Apply migrations
+
+```bash
+npm run prisma:migrate          # interactive: creates a new migration if needed
+```
+
+### 4. Seed the 17 regions
+
+```bash
+npm run prisma:seed
+```
+
+The seed is idempotent — safe to rerun.
+
+### 5. Inspect the data (optional)
+
+```bash
+npm run prisma:studio
+```
+
+If you skip all of the above, `/api/mood` continues to work using the
+mock / live-simulation / hybrid / real data paths exactly as before.
+
+---
+
 ## Current MVP Data Strategy
 
 The MVP currently uses simulated global mood data.

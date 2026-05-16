@@ -2,6 +2,10 @@ import {
   buildMoodSnapshot,
   resolveDataMode,
 } from "@/lib/data-sources";
+import {
+  saveMoodSnapshot,
+  shouldWriteSnapshots,
+} from "@/lib/db/snapshots";
 import type { MoodApiResponse } from "@/types/mood";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +21,17 @@ export async function GET(request: Request) {
       requestedMode,
       signal: request.signal,
     });
+
+    // Optional, opt-in snapshot persistence. Both gates must be open:
+    //   - DATABASE_URL configured
+    //   - ENABLE_SNAPSHOT_WRITES=true
+    // Failures here NEVER break the response — they become warnings.
+    if (shouldWriteSnapshots()) {
+      const result = await saveMoodSnapshot(payload);
+      if (!result.saved && result.warning) {
+        payload.warnings = [...(payload.warnings ?? []), result.warning];
+      }
+    }
 
     return Response.json(payload, {
       headers: {
