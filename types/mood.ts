@@ -68,4 +68,10 @@ export type MoodApiResponse = {
   summary: MoodSummary;
   regions: RegionMood[];
   history: MoodHistoryPoint[];
+  /**
+   * Non-fatal warnings produced while building the response (for example,
+   * "real data source unavailable, falling back to mock"). Omitted when
+   * everything went cleanly so existing clients see no shape change.
+   */
+  warnings?: string[];
 };
