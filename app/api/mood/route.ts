@@ -1,3 +1,4 @@
+import { applyAiExplanations } from "@/lib/ai";
 import {
   buildMoodSnapshot,
   resolveDataMode,
@@ -23,6 +24,25 @@ export async function GET(request: Request) {
       requestedMode,
       signal: request.signal,
     });
+
+    // Optional AI explanations. When AI_EXPLANATION_PROVIDER + the
+    // matching API key are configured we ask the provider for short,
+    // hedged explanations per region. Any per-region failure falls
+    // back to rule-based text so the dashboard never sees an empty
+    // explanation field. Without env config this is a no-op that
+    // simply marks `explanationSource: "rule-based"`.
+    const aiResult = await applyAiExplanations(payload.regions, {
+      sourceMode: payload.mode,
+      signal: request.signal,
+    });
+    payload.regions = aiResult.regions;
+    payload.explanationSource = aiResult.explanationSource;
+    if (aiResult.warnings.length > 0) {
+      payload.warnings = [
+        ...(payload.warnings ?? []),
+        ...aiResult.warnings,
+      ];
+    }
 
     // Optional, opt-in snapshot persistence. Both gates must be open:
     //   - DATABASE_URL configured
@@ -75,6 +95,7 @@ export async function GET(request: Request) {
       history: [],
       warnings: [`Mood pipeline failed: ${message}`],
       historySource: "mock",
+      explanationSource: "rule-based",
     };
 
     return Response.json(failurePayload, {
