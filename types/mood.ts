@@ -99,4 +99,11 @@ export type MoodApiResponse = {
    * Present only when real / hybrid modes actually fetched signals.
    */
   sourceSummary?: SourceSummary;
+  /**
+   * Where the `history` array came from:
+   *   "database" - reconstructed from MoodSnapshot rows
+   *   "mock"     - bundled mock history / mock + drift
+   * Omitted on responses produced before this metadata existed.
+   */
+  historySource?: "mock" | "database";
 };

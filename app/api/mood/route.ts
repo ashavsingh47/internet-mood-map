@@ -2,6 +2,8 @@ import {
   buildMoodSnapshot,
   resolveDataMode,
 } from "@/lib/data-sources";
+import { getMoodHistoryFromSnapshots } from "@/lib/db/history";
+import { isDatabaseConfigured } from "@/lib/db/prisma";
 import {
   saveMoodSnapshot,
   shouldWriteSnapshots,
@@ -33,6 +35,22 @@ export async function GET(request: Request) {
       }
     }
 
+    // History defaults to "mock" (the bundled history that mock /
+    // live-simulation already produced). If the database is configured
+    // and has enough snapshots, we replace it with the reconstructed
+    // DB-backed history. Failures fall back silently to mock.
+    payload.historySource = "mock";
+    if (isDatabaseConfigured()) {
+      const dbHistory = await getMoodHistoryFromSnapshots();
+      if (dbHistory.warning) {
+        payload.warnings = [...(payload.warnings ?? []), dbHistory.warning];
+      }
+      if (dbHistory.history.length > 0) {
+        payload.history = dbHistory.history;
+        payload.historySource = "database";
+      }
+    }
+
     return Response.json(payload, {
       headers: {
         "Cache-Control": "no-store",
@@ -56,6 +74,7 @@ export async function GET(request: Request) {
       regions: [],
       history: [],
       warnings: [`Mood pipeline failed: ${message}`],
+      historySource: "mock",
     };
 
     return Response.json(failurePayload, {

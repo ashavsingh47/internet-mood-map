@@ -324,8 +324,24 @@ The seed is idempotent — safe to rerun.
 npm run prisma:studio
 ```
 
+### What the database unlocks
+
+When `DATABASE_URL` is configured AND `ENABLE_SNAPSHOT_WRITES=true`:
+
+- Every `/api/mood` call writes one `MoodSnapshot` row per region plus
+  any matched topics, with `generatedAt` set to the response timestamp.
+- The mood history chart starts reading from those snapshots as soon as
+  there are enough buckets (default: 3 distinct request timestamps).
+  Each chart point shows the average `moodScore` across regions, per
+  tracked emotion (happy, stressed, excited, hopeful, chaotic), per
+  bucket.
+- The API response includes `historySource: "database"` so the
+  dashboard (and future UI badges) can distinguish real vs simulated
+  history.
+
 If you skip all of the above, `/api/mood` continues to work using the
-mock / live-simulation / hybrid / real data paths exactly as before.
+mock / live-simulation / hybrid / real data paths exactly as before
+and `historySource` falls back to `"mock"`.
 
 ---
 
